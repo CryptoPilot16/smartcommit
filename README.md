@@ -2,6 +2,10 @@
 
 Autopilot commits across all your repos.
 
+🌐 **[cryptopilot.dev/smartcommits](https://cryptopilot.dev/smartcommits)**
+
+![Smart-Commit preview](assets/preview.png)
+
 ## What it does
 
 - **Detects dirty repos** across all projects under `~/projects`
