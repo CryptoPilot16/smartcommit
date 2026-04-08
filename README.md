@@ -8,13 +8,15 @@ Autopilot commits across all your repos.
 
 ## What it does
 
-- **Detects dirty repos** across all projects under `~/projects`
+- **Detects dirty repos** across all projects under `$HOME`
 - **Generates meaningful commit messages** using local Ollama (llama3.1:8b) — no API costs
+- **Auto-creates GitHub repos** for new projects and wires remotes with auth
 - **Skips clean repos** — no empty commits, no noise
 - **Tags commit source** — know if a commit came from Claude Code, Codex, cron, or manual
 - **Logs everything** to JSONL for analytics
-- **Daily Telegram rollup** — wake up to a summary of what shipped
+- **Daily & weekly Telegram rollups** — wake up to a summary of what shipped
 - **Git hooks** — even manual commits get logged to the system
+- **Auto preview screenshots** — weekly cron retakes landing page screenshots, only commits if the page actually changed
 
 ## Architecture
 
@@ -63,51 +65,21 @@ smart-commit weekly                # Send weekly Telegram summary
 ## Setup
 
 ```bash
-# 1. Run installer
-bash ~/projects/smart-commit/install.sh
+# 1. Clone and run the installer
+git clone https://github.com/CryptoPilot16/smartcommit /opt/smartcommit
+bash /opt/smartcommit/install.sh
 
-# 2. Edit env file with Telegram creds
-nano ~/projects/smart-commit/.env
+# 2. Edit env file with your credentials
+nano ~/smart-commit/.env
+# TELEGRAM_BOT_TOKEN=
+# TELEGRAM_CHAT_ID=
+# GITHUB_TOKEN=
+# GITHUB_USERNAME=
+# OLLAMA_MODEL=llama3.1:8b
 
 # 3. Test
 smart-commit discover
 smart-commit all
-```
-
-## Claude Code Integration
-
-After each Claude Code task, run:
-```bash
-~/projects/smart-commit/hooks/post-task-claude.sh $(pwd)
-```
-
-Or add to your Claude Code workflow/CLAUDE.md:
-```
-After completing any task, run: smart-commit commit . claude-code
-```
-
-## Codex Integration
-
-Same pattern:
-```bash
-~/projects/smart-commit/hooks/post-task-codex.sh $(pwd)
-```
-
-## Commit Log Format
-
-All commits logged to `~/projects/smart-commit/logs/commits.jsonl`:
-
-```json
-{
-  "timestamp": "2026-04-08T14:30:00Z",
-  "project": "my-app",
-  "path": "~/projects/my-app",
-  "message": "feat(api): add rate limiting middleware",
-  "source": "claude-code",
-  "files_changed": 3,
-  "insertions": 47,
-  "deletions": 12
-}
 ```
 
 ## Telegram Notifications
@@ -123,7 +95,8 @@ All commits logged to `~/projects/smart-commit/logs/commits.jsonl`:
 
 | When | What |
 |------|------|
-| Every hour | Wire any new repos |
+| Every hour | Wire new repos, create GitHub repos, embed auth |
 | Every 2 hours | Auto-commit all dirty repos |
 | 23:55 UTC daily | Daily Telegram rollup |
 | Monday 08:00 UTC | Weekly Telegram rollup |
+| Sunday 03:00 UTC | Retake landing page screenshots (if page changed) |
