@@ -33,7 +33,12 @@ log_error() { echo -e "${RED}[smart-commit]${NC} $1"; }
 
 # Discover all git repos under $HOME
 discover_repos() {
-    find "$HOME" -maxdepth 4 -name ".git" -type d 2>/dev/null | sed 's/\/.git$//'
+    find "$HOME" -maxdepth 4 -name ".git" -type d 2>/dev/null \
+        ! -path "*/.openclaw-backup/*" \
+        ! -path "*/.openclaw.pre-revert*" \
+        ! -path "*/.codex/.tmp/*" \
+        ! -path "*/node_modules/*" \
+        | sed 's/\/.git$//'
 }
 
 # Get project name from repo path
@@ -372,9 +377,9 @@ case "${1:-help}" in
         done
         echo ""
         if [ -f "$COMMIT_LOG" ]; then
-            local today=$(date -u +%Y-%m-%d)
-            local today_count=$(grep -c "$today" "$COMMIT_LOG" 2>/dev/null || echo "0")
-            local total_count=$(wc -l < "$COMMIT_LOG" 2>/dev/null || echo "0")
+            today=$(date -u +%Y-%m-%d)
+            today_count=$(grep -c "$today" "$COMMIT_LOG" 2>/dev/null || echo "0")
+            total_count=$(wc -l < "$COMMIT_LOG" 2>/dev/null || echo "0")
             echo "Commits today: $today_count"
             echo "Commits total: $total_count"
         else
