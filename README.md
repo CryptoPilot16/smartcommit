@@ -17,6 +17,7 @@ Autopilot commits across all your repos.
 - **Daily & weekly Telegram rollups** — wake up to a summary of what shipped
 - **Git hooks** — even manual commits get logged to the system
 - **Auto preview screenshots** — weekly cron retakes landing page screenshots, only commits if the page actually changed
+- **Smart exclusions** — ignores backup dirs, `.codex/.tmp`, `node_modules`, and other noise
 
 ## Architecture
 
@@ -45,7 +46,7 @@ Autopilot commits across all your repos.
 
 ```bash
 smart-commit discover              # List all repos and their status
-smart-commit status                # System overview
+smart-commit status                # System overview with commit counts
 smart-commit all [source]          # Commit all dirty repos
 smart-commit commit [path] [source] [msg]  # Commit specific repo
 smart-commit rollup                # Send daily Telegram summary
@@ -79,6 +80,7 @@ nano ~/smart-commit/.env
 
 # 3. Test
 smart-commit discover
+smart-commit status
 smart-commit all
 ```
 
@@ -100,3 +102,17 @@ smart-commit all
 | 23:55 UTC daily | Daily Telegram rollup |
 | Monday 08:00 UTC | Weekly Telegram rollup |
 | Sunday 03:00 UTC | Retake landing page screenshots (if page changed) |
+
+## Repo Discovery
+
+Smart-commit scans `$HOME` up to 4 levels deep for git repos. The following are automatically excluded:
+
+- `.openclaw-backup/`, `.openclaw.pre-revert-*/` — internal backups
+- `.codex/.tmp/` — Codex temp workspaces
+- `node_modules/` — dependencies
+
+## Requirements
+
+- [Ollama](https://ollama.ai) with `llama3.1:8b` (or any model via `OLLAMA_MODEL`)
+- GitHub personal access token with `repo` scope
+- Telegram bot token + chat ID
