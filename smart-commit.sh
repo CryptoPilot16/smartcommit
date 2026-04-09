@@ -7,6 +7,15 @@
 set -euo pipefail
 
 # --- CONFIG ---
+# Load .env from project folder if present
+SCRIPT_DIR_EARLY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR_EARLY/.env" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$SCRIPT_DIR_EARLY/.env"
+    set +a
+fi
+
 COMMIT_LOG="$HOME/smart-commit/logs/commits.jsonl"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
@@ -33,12 +42,13 @@ log_error() { echo -e "${RED}[smart-commit]${NC} $1"; }
 
 # Discover all git repos under $HOME
 discover_repos() {
-    find "$HOME" -maxdepth 4 -name ".git" -type d 2>/dev/null \
+    find "$HOME" /opt -maxdepth 4 -name ".git" -type d 2>/dev/null \
         ! -path "*/.openclaw-backup/*" \
         ! -path "*/.openclaw.pre-revert*" \
         ! -path "*/.codex/.tmp/*" \
         ! -path "*/node_modules/*" \
-        | sed 's/\/.git$//'
+        | sed 's/\/.git$//' \
+        | sort -u
 }
 
 # Get project name from repo path

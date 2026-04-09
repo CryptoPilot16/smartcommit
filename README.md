@@ -8,13 +8,14 @@ Autopilot commits across all your repos.
 
 ## What it does
 
-- **Detects dirty repos** across all projects under `$HOME`
+- **Detects dirty repos** across all projects under `$HOME` and `/opt/`
 - **Generates meaningful commit messages** using local Ollama (llama3.1:8b) — no API costs
 - **Auto-creates GitHub repos** for new projects and wires remotes with auth
 - **Skips clean repos** — no empty commits, no noise
 - **Tags commit source** — know if a commit came from Claude Code, Codex, cron, or manual
 - **Logs everything** to JSONL for analytics
 - **Daily & weekly Telegram rollups** — wake up to a summary of what shipped
+- **Telegram bot** — trigger commits, check repo status, and register new projects from your phone
 - **Git hooks** — even manual commits get logged to the system
 - **Auto preview screenshots** — weekly cron retakes landing page screenshots, only commits if the page actually changed
 - **Smart exclusions** — ignores backup dirs, `.codex/.tmp`, `node_modules`, and other noise
@@ -22,12 +23,12 @@ Autopilot commits across all your repos.
 ## Architecture
 
 ```
-┌─────────────────┐  ┌──────────────┐  ┌──────────────┐
-│  Claude Code    │  │    Codex     │  │  Cron (2h)   │
-│  post-task hook │  │  post-task   │  │  auto-sweep  │
-└────────┬────────┘  └──────┬───────┘  └──────┬───────┘
-         │                  │                  │
-         └──────────────────┼──────────────────┘
+┌─────────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│  Claude Code    │  │    Codex     │  │  Cron (2h)   │  │  Telegram    │
+│  post-task hook │  │  post-task   │  │  auto-sweep  │  │  Bot cmds    │
+└────────┬────────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+         │                  │                  │                  │
+         └──────────────────┼──────────────────┴──────────────────┘
                             │
                    ┌────────▼────────┐
                    │  smart-commit   │
@@ -42,7 +43,7 @@ Autopilot commits across all your repos.
        └─────────────┘ └────────┘ └─────────────┘
 ```
 
-## Commands
+## CLI Commands
 
 ```bash
 smart-commit discover              # List all repos and their status
@@ -53,6 +54,23 @@ smart-commit rollup                # Send daily Telegram summary
 smart-commit weekly                # Send weekly Telegram summary
 ```
 
+## Telegram Bot Commands
+
+The bot runs as a systemd service (`smartcommit-bot`) and listens for commands 24/7.
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show all available commands |
+| `/status` | Dirty/clean repo overview + today's commit count |
+| `/discover` | Full repo list with per-repo change counts |
+| `/all` | Commit all dirty repos immediately |
+| `/commit <path>` | Commit a specific repo |
+| `/rollup` | Send today's commit summary |
+| `/weekly` | Send this week's commit summary |
+| `/register <path>` | Track a repo outside `$HOME` / `/opt/` |
+| `/unregister <path>` | Stop tracking a manually registered repo |
+| `/registered` | List manually registered repos |
+
 ## Sources
 
 | Source | When |
@@ -60,7 +78,7 @@ smart-commit weekly                # Send weekly Telegram summary
 | `auto` | Cron job sweep (default) |
 | `claude-code` | Claude Code task completion |
 | `codex` | Codex task completion |
-| `manual` | You ran it yourself |
+| `manual` | You ran it yourself or via Telegram bot |
 | `direct` | Git hook caught a manual `git commit` |
 
 ## Setup
@@ -71,14 +89,17 @@ git clone https://github.com/CryptoPilot16/smartcommit /opt/smartcommit
 bash /opt/smartcommit/install.sh
 
 # 2. Edit env file with your credentials
-nano ~/smart-commit/.env
+nano /opt/smartcommit/.env
 # TELEGRAM_BOT_TOKEN=
 # TELEGRAM_CHAT_ID=
 # GITHUB_TOKEN=
 # GITHUB_USERNAME=
 # OLLAMA_MODEL=llama3.1:8b
 
-# 3. Test
+# 3. Start the Telegram bot
+systemctl enable --now smartcommit-bot
+
+# 4. Test
 smart-commit discover
 smart-commit status
 smart-commit all
@@ -105,11 +126,13 @@ smart-commit all
 
 ## Repo Discovery
 
-Smart-commit scans `$HOME` up to 4 levels deep for git repos. The following are automatically excluded:
+Smart-commit scans `$HOME` and `/opt/` up to 4 levels deep for git repos. The following are automatically excluded:
 
 - `.openclaw-backup/`, `.openclaw.pre-revert-*/` — internal backups
 - `.codex/.tmp/` — Codex temp workspaces
 - `node_modules/` — dependencies
+
+For repos outside these paths, use `/register <path>` in Telegram or the `projects.txt` file.
 
 ## Requirements
 
